@@ -154,3 +154,26 @@ def test_remove_from_watchlist_not_present_raises(app, sample_user, sample_film)
     with app.app_context():
         with pytest.raises(NotInWatchlistError):
             remove_from_watchlist(user_id=sample_user, film_id=sample_film)
+
+
+# ── Default visibility / toggle (Comment 4 + stretch) ────────────────────────
+
+def test_add_to_watchlist_defaults_to_private(app, sample_user, sample_film):
+    """
+    A new watchlist entry should default to private (public=False) so users
+    aren't opted into sharing their viewing intentions without asking.
+    """
+    with app.app_context():
+        entry = add_to_watchlist(user_id=sample_user, film_id=sample_film)
+        assert entry.public is False
+
+
+def test_add_to_watchlist_public_override(app, sample_user, sample_film):
+    """
+    Callers can explicitly opt in to public visibility (visibility toggle).
+    """
+    with app.app_context():
+        entry = add_to_watchlist(
+            user_id=sample_user, film_id=sample_film, public=True
+        )
+        assert entry.public is True

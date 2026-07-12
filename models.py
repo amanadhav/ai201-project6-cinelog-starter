@@ -81,7 +81,9 @@ class WatchlistEntry(db.Model):
     # (Was db.Integer on the feature branch, resolved during the rebase onto main.)
     film_id = db.Column(db.String(36), db.ForeignKey("film.id"), nullable=False)
     date_added = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    public = db.Column(db.Boolean, default=True)
+    # A watchlist reveals what a user *plans* to watch, so it defaults to private.
+    # Callers can opt in to public sharing explicitly. See Comment 4 in pr-response.md.
+    public = db.Column(db.Boolean, default=False)
 
     # Relationship so get_watchlist() can read entry.film (mirrors CollectionEntry).
     film = db.relationship("Film", backref="watchlist_entries")
