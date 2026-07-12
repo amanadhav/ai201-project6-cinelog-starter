@@ -71,3 +71,33 @@ class CollectionEntry(db.Model):
             "date_added": self.date_added.isoformat(),
             "rating": self.rating,
         }
+
+
+class WatchlistEntry(db.Model):
+    """Represents a film a user wants to watch (saved for later)."""
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    user_id = db.Column(db.String(36), db.ForeignKey("user.id"), nullable=False)
+    # film_id is a UUID (db.String(36)) to match the post-refactor Film.id.
+    # (Was db.Integer on the feature branch, resolved during the rebase onto main.)
+    film_id = db.Column(db.String(36), db.ForeignKey("film.id"), nullable=False)
+    date_added = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    # A watchlist reveals what a user *plans* to watch, so it defaults to private.
+    # Callers can opt in to public sharing explicitly. See Comment 4 in pr-response.md.
+    public = db.Column(db.Boolean, default=False)
+
+    # Relationship so get_watchlist() can read entry.film (mirrors CollectionEntry).
+    film = db.relationship("Film", backref="watchlist_entries")
+
+    # Mirrors CollectionEntry: a user can only have one watchlist entry per film.
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "film_id", name="unique_user_film_watchlist"),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "film_id": self.film_id,
+            "date_added": self.date_added.isoformat(),
+            "public": self.public,
+        }
