@@ -84,6 +84,11 @@ class WatchlistEntry(db.Model):
     # Relationship so get_watchlist() can read entry.film (mirrors CollectionEntry).
     film = db.relationship("Film", backref="watchlist_entries")
 
+    # Mirrors CollectionEntry: a user can only have one watchlist entry per film.
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "film_id", name="unique_user_film_watchlist"),
+    )
+
     def to_dict(self):
         return {
             "id": self.id,
