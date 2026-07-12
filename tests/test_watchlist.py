@@ -177,3 +177,26 @@ def test_add_to_watchlist_public_override(app, sample_user, sample_film):
             user_id=sample_user, film_id=sample_film, public=True
         )
         assert entry.public is True
+
+
+# ── Extra edge case (stretch): dedup is scoped per user ──────────────────────
+
+def test_watchlist_dedup_is_per_user(app, sample_film):
+    """
+    Edge case: the "already on watchlist" guard is scoped to (user, film),
+    not to the film alone. Two different users must both be able to add the
+    same film. This protects against an over-broad unique constraint that
+    would let one user's watchlist block another's.
+    """
+    with app.app_context():
+        user_a = User(username="ada", email="ada@example.com")
+        user_b = User(username="bob", email="bob@example.com")
+        db.session.add_all([user_a, user_b])
+        db.session.commit()
+        a_id, b_id = user_a.id, user_b.id
+
+        add_to_watchlist(user_id=a_id, film_id=sample_film)
+        # Should NOT raise — different user, same film.
+        add_to_watchlist(user_id=b_id, film_id=sample_film)
+
+        assert WatchlistEntry.query.filter_by(film_id=sample_film).count() == 2
